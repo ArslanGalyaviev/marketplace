@@ -4,8 +4,6 @@
 
 title Marketplace — C4 Container Diagram
 
-LAYOUT_WITH_LEGEND()
-
 Person(buyer, "Покупатель", "Пользователь, который просматривает товары и оформляет заказы")
 Person(seller, "Продавец", "Пользователь, который размещает товары на маркетплейсе")
 
