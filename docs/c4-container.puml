@@ -1,0 +1,87 @@
+@startuml marketplace-c4-container
+
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+title Marketplace — C4 Container Diagram
+
+LAYOUT_WITH_LEGEND()
+
+Person(buyer, "Покупатель", "Пользователь, который просматривает товары и оформляет заказы")
+Person(seller, "Продавец", "Пользователь, который размещает товары на маркетплейсе")
+
+System_Boundary(marketplace, "Marketplace") {
+
+    Container(users, "Users Service", "Python / FastAPI", "Управление пользователями, профилями и ролями")
+
+    Container(products, "Products Service", "Python / FastAPI", "Управление каталогом товаров, ценами и остатками")
+
+    Container(orders, "Orders Service", "Python / FastAPI", "Создание заказов и управление их жизненным циклом")
+
+    Container(payments, "Payments Service", "Python / FastAPI", "Создание и учет платежей")
+
+    Container(notifications, "Notifications Service", "Python / FastAPI", "Отправка уведомлений о событиях заказа")
+
+    Container(feed, "Feed Service", "Python / FastAPI", "Персонализированная лента и история взаимодействий")
+
+    ContainerDb(usersDb, "Users DB", "PostgreSQL", "Пользователи, роли и профили")
+
+    ContainerDb(productsDb, "Products DB", "PostgreSQL", "Товары, категории, цены и остатки")
+
+    ContainerDb(ordersDb, "Orders DB", "PostgreSQL", "Заказы и состав заказов")
+
+    ContainerDb(paymentsDb, "Payments DB", "PostgreSQL", "Платежи и их статусы")
+
+    ContainerDb(notificationsDb, "Notifications DB", "PostgreSQL", "История уведомлений и статусы уведомлений")
+
+    ContainerDb(feedDb, "Feed DB", "PostgreSQL", "История просмотров, лайков и других взаимодействий")
+
+    ContainerQueue(kafka, "Kafka", "Apache Kafka", "Шина событий для асинхронного взаимодействия сервисов")
+}
+Lay_R(buyer, seller)
+
+Lay_R(users, products)
+Lay_R(products, orders)
+
+Lay_D(users, usersDb)
+Lay_D(products, productsDb)
+Lay_D(orders, ordersDb)
+
+Lay_D(payments, paymentsDb)
+Lay_D(notifications, notificationsDb)
+Lay_D(feed, feedDb)
+
+Lay_R(payments, kafka)
+Lay_R(kafka, notifications)
+Lay_R(kafka, feed)
+Lay_R(kafka, orders)
+Rel(buyer, users, "Управляет профилем", "HTTPS")
+Rel(seller, users, "Управляет профилем", "HTTPS")
+
+Rel(users, usersDb, "Читает и изменяет", "SQL")
+
+Rel(seller, products, "Управляет товарами", "HTTPS")
+Rel(products, users, "Проверяет продавца", "HTTP/REST")
+Rel(products, productsDb, "Читает и изменяет", "SQL")
+
+Rel(buyer, orders, "Создает и просматривает заказы", "HTTPS")
+Rel(orders, users, "Проверяет покупателя", "HTTP/REST")
+Rel(orders, products, "Проверяет и резервирует товар", "HTTP/REST")
+Rel(orders, payments, "Инициирует платеж", "HTTP/REST")
+Rel(orders, ordersDb, "Читает и изменяет", "SQL")
+
+Rel(payments, paymentsDb, "Читает и изменяет", "SQL")
+Rel(payments, kafka, "Публикует PaymentSucceeded", "Kafka")
+
+Rel(orders, kafka, "Публикует OrderStatusChanged", "Kafka")
+
+Rel(products, kafka, "Публикует ProductCreated / ProductUpdated", "Kafka")
+Rel(kafka, orders, "Получает PaymentSucceeded", "Kafka")
+Rel(kafka, notifications, "Получает OrderStatusChanged", "Kafka")
+Rel(notifications, notificationsDb, "Читает и изменяет", "SQL")
+
+Rel(kafka, feed, "Получает ProductCreated / ProductUpdated", "Kafka")
+Rel(feed, users, "Получает данные профиля", "HTTP/REST")
+Rel(feed, products, "Получает актуальные данные товаров", "HTTP/REST")
+Rel(feed, feedDb, "Читает и изменяет", "SQL")
+
+@enduml
